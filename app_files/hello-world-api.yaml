@@ -1,42 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world-api
+  name: my-simple-app-deployment
   labels:
-    app: hello-world-api
+    app: my-simple-app
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
-      app: hello-world-api
+      app: my-simple-app
   template:
     metadata:
       labels:
-        app: hello-world-api
+        app: my-simple-app
     spec:
-      initContainers:
-#      - name: install-flask
-#        image: python:3.9-slim
-#        command: ["sh", "-c", "pip install flask && cp -r /usr/local/lib/python3.9/site-packages /app"]
-#        volumeMounts:
-#        - name: app-volume
-#          mountPath: /app
       containers:
-      - name: hello-world-api
-        image: python:3.9-slim
+      - name: my-simple-app
+        image: yidgar11/podinfo:v1.0
         ports:
-        - containerPort: 5000
-        #command: ["python", "-m", "flask", "run", "--host=0.0.0.0"]
-        command: ["python", "-m", "flask", "run", "--host=0.0.0.0"]
-        env:
-        - name: FLASK_APP
-          value: app.py
-        volumeMounts:
-        - name: app-volume
-          mountPath: /app
-      volumes:
-      - name: app-volume
-        emptyDir: {}
+        - containerPort: 9898
 ---
 apiVersion: v1
 kind: Service
@@ -46,15 +28,15 @@ spec:
   type: NodePort
   ports:
     - port: 5000
-      targetPort: 5000
+      targetPort: 9898
       nodePort: 30007
   selector:
-    app: hello-world-api
+    app: my-simple-app
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hello-world-api-config
+  name: my-simple-app-config
 data:
   app.py: |
     from http.server import BaseHTTPRequestHandler, HTTPServer
