@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-api
+  labels:
+    app: hello-world-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-world-api
+  template:
+    metadata:
+      labels:
+        app: hello-world-api
+    spec:
+      initContainers:
+      - name: install-flask
+        image: python:3.9-slim
+        command: ["sh", "-c", "pip install flask && cp -r /usr/local/lib/python3.9/site-packages /app"]
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+      containers:
+      - name: hello-world-api
+        image: python:3.9-slim
+        ports:
+        - containerPort: 5000
+        command: ["python", "-m", "flask", "run", "--host=0.0.0.0"]
+        env:
+        - name: FLASK_APP
+          value: app.py
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+      volumes:
+      - name: app-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-service
+spec:
+  type: NodePort
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30007
+  selector:
+    app: hello-world-api
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-world-api-config
+data:
+  app.py: |
+    from flask import Flask
+    app = Flask(__name__)
+
+    @app.route("/")
+    def hello():
+        return "Hello, World!"
+
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=5000)
+
