@@ -15,17 +15,18 @@ spec:
         app: hello-world-api
     spec:
       initContainers:
-      - name: install-flask
-        image: python:3.9-slim
-        command: ["sh", "-c", "pip install flask && cp -r /usr/local/lib/python3.9/site-packages /app"]
-        volumeMounts:
-        - name: app-volume
-          mountPath: /app
+#      - name: install-flask
+#        image: python:3.9-slim
+#        command: ["sh", "-c", "pip install flask && cp -r /usr/local/lib/python3.9/site-packages /app"]
+#        volumeMounts:
+#        - name: app-volume
+#          mountPath: /app
       containers:
       - name: hello-world-api
         image: python:3.9-slim
         ports:
         - containerPort: 5000
+        #command: ["python", "-m", "flask", "run", "--host=0.0.0.0"]
         command: ["python", "-m", "flask", "run", "--host=0.0.0.0"]
         env:
         - name: FLASK_APP
@@ -56,13 +57,36 @@ metadata:
   name: hello-world-api-config
 data:
   app.py: |
-    from flask import Flask
-    app = Flask(__name__)
+    from http.server import BaseHTTPRequestHandler, HTTPServer
 
-    @app.route("/")
-    def hello():
-        return "Hello, World!"
+    # Define a request handler
+    class SimpleRequestHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            # Handle GET request for /hello
+            if self.path == "/hello":
+                self.send_response(200)  # HTTP status 200: OK
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"hello world")
+            elif self.path == "/hello":
+                self.send_response(200)  # HTTP status 200: OK
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"hello world")
+            else:
+                # Return 404 for other paths
+                self.send_response(404)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"Not Found")
+
+    # Set up and start the server
+    def run_server():
+        server_address = ("", 9009)  # Listen on all interfaces, port 9009
+        httpd = HTTPServer(server_address, SimpleRequestHandler)
+        print("Server running on port 9009...")
+        httpd.serve_forever()
 
     if __name__ == "__main__":
-        app.run(host="0.0.0.0", port=5000)
+        run_server()
 
